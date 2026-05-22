@@ -1,0 +1,214 @@
+local Player = game:GetService("Players").LocalPlayer
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+-- Save System 
+local Save = {
+    Pos = UDim2.new(0.7, -60, 0.5, -60),
+    Scale = 1,
+    LagTime = 1,
+    Flag = false,
+    RGBSpeed = 1
+}
+
+local UILocked = false
+
+-- Remove Old Ui
+for _,v in pairs(PlayerGui:GetChildren()) do
+    if v.Name == "UltraFreezeUI" then
+        v:Destroy()
+    end
+end
+
+-- ScreenGUI
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+ScreenGui.Name = "UltraFreezeUI"
+ScreenGui.ResetOnSpawn = false
+
+local Panel = Instance.new("Frame", ScreenGui)
+Panel.Size = UDim2.new(0,260,0,80)
+Panel.Position = Save.Pos
+Panel.BackgroundColor3 = Color3.fromRGB(10,15,25)
+Panel.Active = true
+Instance.new("UICorner", Panel)
+
+local Stroke = Instance.new("UIStroke", Panel)
+Stroke.Color = Color3.fromRGB(0,255,255)
+Stroke.Thickness = 2 -- Agar efek RGB lebih terlihat
+
+local UIScale = Instance.new("UIScale", Panel)
+UIScale.Scale = Save.Scale
+
+-- Title
+local Title = Instance.new("TextLabel", Panel)
+Title.Size = UDim2.new(1,-20,0.6,0)
+Title.Position = UDim2.new(0,10,0,15)
+Title.BackgroundTransparency = 1
+Title.Text = "FREEZE NOW"
+Title.TextColor3 = Color3.fromRGB(0,255,255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+
+-- Status
+local Status = Instance.new("TextLabel", Panel)
+Status.Size = UDim2.new(1,-20,0.3,0)
+Status.Position = UDim2.new(0,10,0.65,0)
+Status.BackgroundTransparency = 1
+Status.Text = ""
+Status.Font = Enum.Font.Code
+Status.TextSize = 12
+Status.TextColor3 = Color3.fromRGB(150,255,255)
+
+-- Button
+local Button = Instance.new("TextButton", Panel)
+Button.Size = UDim2.new(1,0,1,0)
+Button.BackgroundTransparency = 1
+Button.Text = ""
+
+-- Settings
+local Settings = Instance.new("Frame", Panel)
+Settings.Size = UDim2.new(1,-70,0,135)
+Settings.Position = UDim2.new(0,0,1,5)
+Settings.BackgroundColor3 = Color3.fromRGB(15,20,30)
+Settings.Visible = false
+Instance.new("UICorner", Settings)
+
+-- Gear
+local Gear = Instance.new("TextButton", Panel)
+Gear.Size = UDim2.new(0,30,0,30)
+Gear.Position = UDim2.new(1,-35,0,5)
+Gear.Text = "⚙️"
+Gear.BackgroundColor3 = Color3.fromRGB(20,20,20)
+Gear.TextColor3 = Color3.new(1,1,1)
+
+Gear.MouseButton1Click:Connect(function()
+    Settings.Visible = not Settings.Visible
+end)
+
+-- Scale
+local ScaleBtn = Instance.new("TextButton", Settings)
+ScaleBtn.Size = UDim2.new(1,-20,0,25)
+ScaleBtn.Position = UDim2.new(0,10,0,10)
+ScaleBtn.Text = "Scale: 1x"
+ScaleBtn.BackgroundColor3 = Color3.fromRGB(25,25,20)
+ScaleBtn.TextColor3 = Color3.fromRGB(0,255,255)
+Instance.new("UICorner", ScaleBtn)
+
+ScaleBtn.MouseButton1Click:Connect(function()
+    Save.Scale += 0.1
+    if Save.Scale > 1.5 then Save.Scale = 0.7 end
+    UIScale.Scale = Save.Scale
+    ScaleBtn.Text = "Scale: "..math.floor(Save.Scale*10)/10 .."x"
+end)
+
+-- Ms Input
+local LagBox = Instance.new("TextBox", Settings)
+LagBox.Size = UDim2.new(1,-20,0,25)
+LagBox.Position = UDim2.new(0,10,0,40)
+LagBox.Text = tostring(Save.LagTime)
+LagBox.BackgroundColor3 = Color3.fromRGB(20,20,20)
+LagBox.TextColor3 = Color3.fromRGB(0,255,255)
+
+local ApplyLag = Instance.new("TextButton", Settings)
+ApplyLag.Size = UDim2.new(1,-20,0,25)
+ApplyLag.Position = UDim2.new(0,10,0,70)
+ApplyLag.Text = "Apply"
+ApplyLag.BackgroundColor3 = Color3.fromRGB(25,25,20)
+ApplyLag.TextColor3 = Color3.fromRGB(0,255,255)
+Instance.new("UICorner", ApplyLag)
+
+ApplyLag.MouseButton1Click:Connect(function()
+    local num = tonumber(LagBox.Text)
+    if num then
+        Save.LagTime = math.clamp(num,0.05,3)
+    end
+end)
+
+-- FastFlags 
+local FlagBtn = Instance.new("TextButton", Settings)
+FlagBtn.Size = UDim2.new(1,-20,0,25)
+FlagBtn.Position = UDim2.new(0,10,0,100)
+FlagBtn.Text = "FastFlag: Off"
+FlagBtn.BackgroundColor3 = Color3.fromRGB(25,25,20)
+FlagBtn.TextColor3 = Color3.fromRGB(0,255,255)
+Instance.new("UICorner", FlagBtn) 
+
+FlagBtn.MouseButton1Click:Connect(function()
+    Save.Flag = not Save.Flag
+    FlagBtn.Text = Save.Flag and "FastFlag: On" or "FastFlag: Off"
+
+    pcall(function()
+        if Save.Flag then
+            setfflag("MaxMissedWorldStepsRemembered",10000)
+        else
+            setfflag("MaxMissedWorldStepsRemembered",0)
+        end
+    end)
+end)
+
+-- RGB Loop
+task.spawn(function()
+    local hue = 0
+    while task.wait(0.03) do
+        hue = (hue + (0.01 * Save.RGBSpeed)) % 1
+        local color = Color3.fromHSV(hue, 0.8, 1)
+
+        Stroke.Color = color
+        Title.TextColor3 = color
+    end
+end)
+
+-- Drag System 
+local Dragging = false
+local DragInput, DragStart, StartPos
+
+local function Update(input)
+    local delta = input.Position - DragStart
+    Panel.Position = UDim2.new(
+        StartPos.X.Scale,
+        StartPos.X.Offset + delta.X,
+        StartPos.Y.Scale,
+        StartPos.Y.Offset + delta.Y
+    )
+end
+
+Button.InputBegan:Connect(function(input)
+    if UILocked then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        
+        Dragging = true
+        DragStart = input.Position
+        StartPos = Panel.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                Dragging = false
+            end
+        end)
+    end
+end)
+
+Button.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+    or input.UserInputType == Enum.UserInputType.Touch then
+        DragInput = input
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if input == DragInput and Dragging then
+        Update(input)
+    end
+end)
+
+-- Freeze Button
+Button.MouseButton1Click:Connect(function()
+    local t = os.clock()
+    while os.clock() - t < Save.LagTime do
+        for i=1,50000 do end
+    end
+end)
+
+print("UltraFreeze By Snowy Loaded")
