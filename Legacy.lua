@@ -1,1 +1,1 @@
-LocalPlayer:Kick("THE SCRIPT IS DOWN: I'm Appolegize to you guys | Sorry I Have To Working 24/7 again")
+game:GetService("Players").LocalPlayer:Kick("THE SCRIPS ARE DOWN: Sorry the Scrips have a problem i'm working 24/7 again.")
